@@ -3,36 +3,58 @@
 <head>
     <title>Profile Setup</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .form-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 10px;
+            max-width: 400px;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Profile Setup</h2>
 
-    <label>Name</label>
-    <input type="text" placeholder="Enter name">
-
-    <label>Age</label>
-    <input type="number">
-
-    <label>Gender</label>
-    <select>
-        <option>Male</option>
-        <option>Female</option>
-    </select>
-
-    <label>Height (cm)</label>
-    <input type="number">
-
-    <label>Weight (kg)</label>
-    <input type="number">
-
-    <label>Goal</label>
-    <select>
-        <option>Lose Weight</option>
-        <option>Maintain Weight</option>
-        <option>Gain Weight</option>
-    </select>
+    <div class="form-row">
+        <label>Name</label>
+        <input type="text" placeholder="Enter name">
+    </div>
+    
+    <div class="form-row">
+        <label>Age</label>
+        <input type="number">
+    </div>
+    
+    <div class="form-row">
+        <label>Gender</label>
+        <select>
+            <option>Male</option>
+            <option>Female</option>
+        </select>
+    </div>
+    
+    <div class="form-row">
+        <label>Height (cm)</label>
+        <input type="number">
+    </div>
+    
+    <div class="form-row">
+        <label>Weight (kg)</label>
+        <input type="number">
+    </div>
+    
+    <div class="form-row">
+        <label>Goal</label>
+        <select>
+            <option>Lose Weight</option>
+            <option>Maintain Weight</option>
+            <option>Gain Weight</option>
+        </select>
+    </div>
 
     <button>Save Profile</button>
 </div>
