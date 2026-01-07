@@ -3,29 +3,47 @@
 <head>
     <title>Add Meal</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .form-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 10px;
+            max-width: 400px;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Add Meal</h2>
 
-    <label>Meal Type</label>
+    <div class="form-row">
+    <label>Meal Type   </label>
     <select>
         <option>Breakfast</option>
         <option>Lunch</option>
         <option>Dinner</option>
         <option>Snack</option>
     </select>
+    </div>
 
-    <label>Food Item</label>
-    <input type="text" placeholder="Search food">
+    <div class="form-row">
+        <label>Food Item</label>
+        <input type="text" placeholder="Search food">
+    </div>
 
-    <label>Quantity</label>
-    <input type="number" placeholder="e.g. 1">
+    <div class="form-row">
+        <label>Quantity</label>
+        <input type="number" placeholder="e.g. 1">
+    </div>
 
-    <label>Calories</label>
-    <input type="text" value="300 kcal" disabled>
-
+    <div class="form-row">
+        <label>Calories</label>
+        <input type="text" value="300 kcal" disabled>
+    </div>
+    
     <button>Add Food</button>
 </div>
 
