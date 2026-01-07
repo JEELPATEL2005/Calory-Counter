@@ -1,0 +1,28 @@
+body {
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    background: #f4f4f4;
+}
+
+.container {
+    background: #fff;
+    padding: 20px;
+    width: 420px;
+    margin: 40px auto;
+    border-radius: 8px;
+}
+
+h2 {
+    font-size: 20px;
+    margin-bottom: 15px;
+}
+
+button {
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+input, select {
+    padding: 6px;
+    font-size: 14px;
+}
