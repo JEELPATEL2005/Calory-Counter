@@ -1,0 +1,145 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Add Meal</title>
+
+<style>
+body{
+    font-family:Arial;
+    background:#f4f6fb;
+    padding:30px;
+}
+
+.box{
+    max-width:500px;
+    margin:auto;
+    background:white;
+    padding:25px;
+    border-radius:12px;
+    box-shadow:0 10px 25px rgba(0,0,0,.1);
+}
+
+h2{
+    margin-bottom:15px;
+}
+
+label{
+    font-weight:bold;
+    display:block;
+    margin-top:15px;
+}
+
+input,select{
+    width:100%;
+    padding:10px;
+    margin-top:5px;
+    border:1px solid #ccc;
+    border-radius:6px;
+}
+
+button{
+    margin-top:20px;
+    width:100%;
+    padding:12px;
+    border:none;
+    background:#4CAF50;
+    color:white;
+    border-radius:8px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#43a047;
+}
+
+.back{
+    display:block;
+    margin-top:15px;
+    text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>➕ Add Meal</h2>
+
+<p><b>Date:</b> {{ today }}</p>
+
+<form method="POST">
+{% csrf_token %}
+
+<input type="hidden" name="date" value="{{ today }}">
+
+<!-- Meal Type -->
+<label>Meal Type</label>
+<select id="meal" name="meal" required>
+    <option value="">Select Meal</option>
+    <option value="breakfast">Breakfast</option>
+    <option value="lunch">Lunch</option>
+    <option value="dinner">Dinner</option>
+    <option value="snack">Snack</option>
+</select>
+
+<!-- Food -->
+<label>Food</label>
+<select id="food" name="food" required>
+    <option value="">Select meal type first</option>
+</select>
+
+<!-- Quantity -->
+<label>Quantity</label>
+<input type="number" name="qty" step="0.1" min="0" required>
+
+<button type="submit">Add Meal</button>
+
+</form>
+
+<a href="{% url 'meal_page' %}" class="back">⬅ Back to Meals</a>
+
+</div>
+
+
+<!-- FOODS DATA FROM DJANGO -->
+<script>
+const FOODS = {{ foods|safe }};
+</script>
+
+<!-- FILTER SCRIPT -->
+<script>
+
+const mealSelect = document.getElementById("meal");
+const foodSelect = document.getElementById("food");
+
+function loadFoods(type){
+
+    foodSelect.innerHTML = '<option value="">Select Food</option>';
+
+    const filteredFoods = FOODS.filter(f => f.meal_type === type);
+
+    if(filteredFoods.length === 0){
+        foodSelect.innerHTML = '<option value="">No foods available</option>';
+        return;
+    }
+
+    filteredFoods.forEach(food => {
+        const option = document.createElement("option");
+        option.value = food.id;
+        option.textContent = food.name;
+        foodSelect.appendChild(option);
+    });
+}
+
+mealSelect.addEventListener("change", function(){
+    loadFoods(this.value);
+});
+
+</script>
+
+</body>
+</html>
