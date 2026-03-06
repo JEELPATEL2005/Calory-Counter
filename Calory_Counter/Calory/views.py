@@ -181,6 +181,59 @@ def profile(request):
     return render(request,'Calory/profile.html')
 
 
+# @login_required
+# def dashboard(request):
+
+#     today = date.today()
+
+#     # Get profile
+#     try:
+#         profile = Profile.objects.get(user=request.user)
+#     except Profile.DoesNotExist:
+#         return redirect("profile")
+
+#     # Today's meals
+#     meals = Meal.objects.filter(user=request.user, date=today)
+
+#     breakfasts = meals.filter(meal="breakfast")
+#     lunches = meals.filter(meal="lunch")
+#     dinners = meals.filter(meal="dinner")
+#     snacks = meals.filter(meal="snack")
+
+#     # Total calories
+#     total = sum(m.calories for m in meals)
+
+#     # Status logic
+#     status = "normal"
+#     if total > profile.target:
+#         status = "over"
+#     elif total >= 0.9 * profile.target:
+#         status = "good"
+
+#     msg = motivation(status)
+
+#     # Save daily summary
+#     update_summary(request.user, today, total, profile)
+
+#     # Read summary (for deficiency)
+#     summary = DailySummary.objects.filter(
+#         user=request.user,
+#         date=today
+#     ).first()
+
+#     deficiency = summary.deficiency if summary else "Not calculated"
+
+#     return render(request, "Calory/dashboard.html", {
+#         "profile": profile,
+#         "total": round(total, 2),
+#         "msg": msg,
+#         "deficiency": deficiency,
+#         "breakfasts": breakfasts,
+#         "lunches": lunches,
+#         "dinners": dinners,
+#         "snacks": snacks,
+#     })
+
 @login_required
 def dashboard(request):
 
@@ -212,7 +265,15 @@ def dashboard(request):
 
     msg = motivation(status)
 
-    # Save daily summary
+    # Finalize yesterday's streak (now that the day is over)
+    yesterday = today - timedelta(days=1)
+    yesterday_existing = DailySummary.objects.filter(user=request.user, date=yesterday).first()
+    if yesterday_existing and not yesterday_existing.streak_finalized:
+        yesterday_meals = Meal.objects.filter(user=request.user, date=yesterday)
+        yesterday_total = sum(m.calories for m in yesterday_meals)
+        update_summary(request.user, yesterday, yesterday_total, profile)
+
+    # Save today's summary (streak stays pending)
     update_summary(request.user, today, total, profile)
 
     # Read summary (for deficiency)
@@ -223,11 +284,19 @@ def dashboard(request):
 
     deficiency = summary.deficiency if summary else "Not calculated"
 
+    # Streak: show yesterday's finalized streak (today's is not decided yet)
+    yesterday_summary = DailySummary.objects.filter(
+        user=request.user,
+        date=yesterday
+    ).first()
+    streak = yesterday_summary.streak if yesterday_summary else 0
+
     return render(request, "Calory/dashboard.html", {
         "profile": profile,
         "total": round(total, 2),
         "msg": msg,
         "deficiency": deficiency,
+        "streak": streak,
         "breakfasts": breakfasts,
         "lunches": lunches,
         "dinners": dinners,
@@ -235,39 +304,89 @@ def dashboard(request):
     })
 
 
+# def update_summary(user, day, total, profile):
 
+#     today = timezone.localdate()
+
+#     # If past record already exists → DO NOTHING (HARD FREEZE)
+#     existing = DailySummary.objects.filter(user=user, date=day).first()
+#     if existing and day < today:
+#         return
+
+#     # Determine target snapshot
+#     if existing:
+#         target = existing.target
+#         streak = existing.streak
+#     else:
+#         target = profile.target
+
+#         # calculate streak ONLY for new day
+#         prev_day = day - timedelta(days=1)
+#         prev = DailySummary.objects.filter(user=user, date=prev_day, healthy=True).first()
+#         streak = prev.streak if prev else 0
+
+#     meals = Meal.objects.filter(user=user, date=day)
+
+#     deficiency = detect_deficiency(meals) or "Balanced diet"
+#     healthy = (0.9 * target <= total <= 1.1 * target)
+
+#     if not existing:   # streak only updates when creating new day
+#         if healthy:
+#             streak += 1
+#         else:
+#             streak = 0
+
+#     DailySummary.objects.update_or_create(
+#         user=user,
+#         date=day,
+#         defaults={
+#             'total_calories': total,
+#             'healthy': healthy,
+#             'streak': streak,
+#             'deficiency': deficiency,
+#             'target': target
+#         }
+#     )
 
 def update_summary(user, day, total, profile):
 
     today = timezone.localdate()
 
-    # If past record already exists → DO NOTHING (HARD FREEZE)
     existing = DailySummary.objects.filter(user=user, date=day).first()
-    if existing and day < today:
+
+    # Past days: allow one finalization pass (to set streak), then freeze
+    if existing and day < today and existing.streak_finalized:
         return
+
+    meals = Meal.objects.filter(user=user, date=day)
+    total = sum(m.calories for m in meals)
 
     # Determine target snapshot
     if existing:
         target = existing.target
-        streak = existing.streak
     else:
         target = profile.target
-
-        # calculate streak ONLY for new day
-        prev_day = day - timedelta(days=1)
-        prev = DailySummary.objects.filter(user=user, date=prev_day, healthy=True).first()
-        streak = prev.streak if prev else 0
-
-    meals = Meal.objects.filter(user=user, date=day)
 
     deficiency = detect_deficiency(meals) or "Balanced diet"
     healthy = (0.9 * target <= total <= 1.1 * target)
 
-    if not existing:   # streak only updates when creating new day
+    # Streak is only finalized when the day is OVER (past day).
+    # For today, streak stays 0 (pending) — dashboard shows yesterday's streak instead.
+    streak_finalized = False
+    if day < today:
+        # Day is over — finalize streak based on previous day
+        prev_day = day - timedelta(days=1)
+        prev = DailySummary.objects.filter(user=user, date=prev_day, healthy=True).first()
+        prev_streak = prev.streak if prev else 0
+
         if healthy:
-            streak += 1
+            streak = prev_streak + 1
         else:
             streak = 0
+        streak_finalized = True
+    else:
+        # Today — streak not decided yet, keep 0
+        streak = 0
 
     DailySummary.objects.update_or_create(
         user=user,
@@ -276,11 +395,11 @@ def update_summary(user, day, total, profile):
             'total_calories': total,
             'healthy': healthy,
             'streak': streak,
+            'streak_finalized': streak_finalized,
             'deficiency': deficiency,
             'target': target
         }
     )
-
 
 @login_required
 def summary_page(request):
@@ -312,10 +431,7 @@ def summary_page(request):
         "target": target,
         "deficiency": deficiency,
         "date": selected_date
-    })
-
-
-    
+    })    
     
 @login_required
 def update_weight(request):

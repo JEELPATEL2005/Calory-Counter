@@ -74,6 +74,7 @@ class DailySummary(models.Model):
     total_calories = models.FloatField()
     healthy = models.BooleanField()
     streak = models.IntegerField()
+    streak_finalized = models.BooleanField(default=False)
 
     deficiency = models.CharField(max_length=100, default="Not calculated")
 
