@@ -68,28 +68,59 @@ def register(request):
 
 # ---------------- LOGIN ----------------
 def user_login(request):
+    """Shared login view for regular users and admins.
 
-    if request.method=="POST":
+    Accepts either email or username. If the authenticated user has an
+    active ``AdminUser`` profile, they are redirected to the admin
+    dashboard; otherwise the regular profile/dashboard is used.
 
-        user=authenticate(
-            username=request.POST['email'],
-            password=request.POST['password']
-        )
+    If a logged‑in user stumbles onto the login page, send them where they
+    belong instead of showing the form again.
+    """
+
+    # already signed in? send them away immediately
+    if request.user.is_authenticated:
+        try:
+            from Admin.models import AdminUser
+            if AdminUser.objects.get(user=request.user, is_active=True):
+                return redirect('admin_dashboard')
+        except AdminUser.DoesNotExist:
+            return redirect('profile')
+
+    error = None
+    if request.method == "POST":
+        identifier = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+
+        # try authentication using the identifier directly (it may already be
+        # a username)
+        user = authenticate(username=identifier, password=password)
+
+        # if that failed and the string looks like an email, try to resolve
+        # the corresponding username so people can log in with either field
+        if not user and '@' in identifier:
+            try:
+                user_obj = User.objects.get(email=identifier)
+                user = authenticate(username=user_obj.username, password=password)
+            except User.DoesNotExist:
+                user = None
 
         if user:
-            login(request,user)
-            
-            # Check if user is an admin
+            login(request, user)
+
+            # admin users go straight to their dashboard
             try:
                 from Admin.models import AdminUser
                 admin_profile = AdminUser.objects.get(user=user, is_active=True)
                 return redirect('admin_dashboard')
-            except:
+            except AdminUser.DoesNotExist:
                 pass
-            
-            return redirect('profile')
 
-    return render(request,'Calory/login.html')
+            return redirect('profile')
+        else:
+            error = 'Invalid credentials. Please try again.'
+
+    return render(request, 'Calory/login.html', {'error': error})
 
 
 # ---------------- LOGOUT ----------------

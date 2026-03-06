@@ -25,31 +25,43 @@ def admin_required(view_func):
 
 # ============= ADMIN LOGIN =============
 def admin_login(request):
-    """Admin login page"""
-    print("Admin login attempt")
+    """Admin login page.
+
+    Like the user login view, administrators are allowed to sign in with
+    either their username or the email associated with their account. An
+    ``error`` string is sent to the template on failure so the page can show
+    feedback.
+    """
+
     if request.user.is_authenticated and is_admin(request.user):
         return redirect('admin_dashboard')
-    
+
+    error = None
     if request.method == 'POST':
-        username = request.POST.get('username', '')
+        identifier = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
-        
-        user = authenticate(username=username, password=password)
-        
+
+        user = authenticate(username=identifier, password=password)
+        if not user and '@' in identifier:
+            try:
+                lookup = User.objects.get(email=identifier)
+                user = authenticate(username=lookup.username, password=password)
+            except User.DoesNotExist:
+                user = None
+
         if user and is_admin(user):
             login(request, user)
             return redirect('admin_dashboard')
         else:
-            return render(request, 'Admin/login.html', {
-                'error': 'Invalid credentials or not an admin user.'
-            })
-    return render(request, 'Admin/login.html')
+            error = 'Invalid credentials or not an admin user.'
+
+    return render(request, 'Admin/login.html', {'error': error})
 
 
 def admin_logout(request):
     """Admin logout"""
     logout(request)
-    return redirect('admin_login')
+    return redirect('/')
 
 
 # ============= ADMIN DASHBOARD =============

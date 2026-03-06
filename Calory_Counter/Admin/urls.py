@@ -23,3 +23,26 @@ urlpatterns = [
     path('admins/', views.manage_admins, name='admin_manage_admins'),
     path('admins/edit-role/<int:admin_id>/', views.edit_admin_role, name='admin_edit_role'),
 ]
+
+def admin_login(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+
+        if user:
+            login(request, user)
+
+            try:
+                from Admin.models import AdminUser
+                admin_profile = AdminUser.objects.get(user=user, is_active=True)
+                return redirect('admin_dashboard')
+            except AdminUser.DoesNotExist:
+                pass
+
+            return redirect('profile')
+        else:
+            error = 'Invalid credentials. Please try again.'
+            return render(request, 'admin/login.html', {'error': error})
+    else:
+        return render(request, 'admin/login.html')

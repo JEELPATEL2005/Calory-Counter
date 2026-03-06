@@ -116,9 +116,12 @@
     <form method="POST" action="{% url 'admin_login' %}">
         {% csrf_token %}
         
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
         <div class="form-group">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
+            <label for="username">Email or Username:</label>
+            <input type="text" id="username" name="username" placeholder="admin or you@example.com" required>
         </div>
         
         <div class="form-group">
