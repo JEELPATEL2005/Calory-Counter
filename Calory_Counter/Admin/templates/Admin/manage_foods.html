@@ -158,6 +158,7 @@
             <thead>
                 <tr>
                     <th>Name</th>
+                    <th>Meal Type</th>
                     <th>Calories/100g</th>
                     <th>Protein</th>
                     <th>Carbs</th>
@@ -171,6 +172,7 @@
                 {% for food in foods %}
                 <tr>
                     <td>{{ food.name }}</td>
+                    <td>{{ food.meal_type }}</td>
                     <td>{{ food.calories_100g }}</td>
                     <td>{{ food.protein }}</td>
                     <td>{{ food.carbs }}</td>

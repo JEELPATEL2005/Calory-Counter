@@ -102,6 +102,8 @@ def add_food_admin(request):
     
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
+        meal_type = request.POST.get('meal_type')
+
         try:
             calories = float(request.POST.get('calories_100g') or 0)
         except ValueError:
@@ -126,6 +128,7 @@ def add_food_admin(request):
 
         if name:
             Food.objects.create(
+                meal_type=meal_type,
                 name=name,
                 calories_100g=calories,
                 protein=protein,
