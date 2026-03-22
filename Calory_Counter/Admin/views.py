@@ -1,79 +1,24 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
+from requests import request
 from Calory.models import Food
-from .models import AdminUser
-
-
-def is_admin(user):
-    """Check if user is an admin"""
-    try:
-        return user.admin_profile.is_active
-    except AdminUser.DoesNotExist:
-        return False
-
-
-def admin_required(view_func):
-    """Decorator to require admin access"""
-    def wrapper(request, *args, **kwargs):
-        if not is_admin(request.user):
-            return redirect('admin_login')
-        return view_func(request, *args, **kwargs)
-    return wrapper
-
-
-# ============= ADMIN LOGIN =============
-def admin_login(request):
-    """Admin login page.
-
-    Like the user login view, administrators are allowed to sign in with
-    either their username or the email associated with their account. An
-    ``error`` string is sent to the template on failure so the page can show
-    feedback.
-    """
-
-    if request.user.is_authenticated and is_admin(request.user):
-        return redirect('admin_dashboard')
-
-    error = None
-    if request.method == 'POST':
-        identifier = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '')
-
-        user = authenticate(username=identifier, password=password)
-        if not user and '@' in identifier:
-            try:
-                lookup = User.objects.get(email=identifier)
-                user = authenticate(username=lookup.username, password=password)
-            except User.DoesNotExist:
-                user = None
-
-        if user and is_admin(user):
-            login(request, user)
-            return redirect('admin_dashboard')
-        else:
-            error = 'Invalid credentials or not an admin user.'
-
-    return render(request, 'Admin/login.html', {'error': error})
-
-
-def admin_logout(request):
-    """Admin logout"""
-    logout(request)
-    return redirect('/')
-
+from .models import User
+from Calory.views import user_login, user_logout
 
 # ============= ADMIN DASHBOARD =============
-@admin_required
 @login_required
 def admin_dashboard(request):
     """Main admin dashboard"""
+
+    role = request.user.role 
     
+    if role not in ['admin', 'superadmin']:
+        return redirect('login')
+
     # Get statistics
     total_foods = Food.objects.count()
-    total_users = User.objects.count()
-    total_admins = AdminUser.objects.filter(is_active=True).count()
+    total_users = User.objects.filter(role ='user').count()
+    total_admins = User.objects.filter(role = 'admin').count()
     
     context = {
         'total_foods': total_foods,
@@ -83,23 +28,25 @@ def admin_dashboard(request):
     
     return render(request, 'Admin/dashboard.html', context)
 
-
 # ============= FOOD MANAGEMENT =============
-@admin_required
 @login_required
-def manage_foods(request):
+def manage_food(request):
     """Manage all food items"""
     
+    if request.user.role not in ['admin', 'superadmin']:
+        return redirect('login')
+
     foods = Food.objects.all().order_by('name')
     
     return render(request, 'Admin/manage_foods.html', {'foods': foods})
 
-
-@admin_required
 @login_required
-def add_food_admin(request):
+def add_food(request):
     """Add a new food item"""
     
+    if request.user.role not in ['admin', 'superadmin']:
+        return redirect('login')
+
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
         meal_type = request.POST.get('meal_type')
@@ -138,16 +85,17 @@ def add_food_admin(request):
                 verified=verified
             )
 
-        return redirect('admin_manage_foods')
+        return redirect('manage_foods')
 
     return render(request, 'Admin/edit_food.html', {'food': None})
 
-
-@admin_required
 @login_required
-def edit_food_admin(request, food_id):
+def edit_food(request, food_id):
     """Edit an existing food item"""
     
+    if request.user.role not in ['admin', 'superadmin']:
+        return redirect('login')
+
     food = get_object_or_404(Food, id=food_id)
 
     if request.method == 'POST':
@@ -175,76 +123,108 @@ def edit_food_admin(request, food_id):
         food.verified = True if request.POST.get('verified') else False
         food.save()
 
-        return redirect('admin_manage_foods')
+        return redirect('manage_foods')
 
     return render(request, 'Admin/edit_food.html', {'food': food})
 
-
-@admin_required
 @login_required
-def delete_food_admin(request, food_id):
+def delete_food(request, food_id):
     """Delete a food item"""
+
+    if request.user.role not in ['admin', 'superadmin']:
+        return redirect('login')
     
     food = get_object_or_404(Food, id=food_id)
     food.delete()
 
-    return redirect('admin_manage_foods')
-
+    return redirect('manage_foods')
 
 # ============= USER MANAGEMENT =============
-@admin_required
 @login_required
 def manage_users(request):
     """Manage all users"""
     
-    users = User.objects.all()
+    if request.user.role not in ['admin', 'superadmin']:
+        return redirect('login')
+
+    users = User.objects.filter(role = 'user').order_by('username')
     
     return render(request, 'Admin/manage_users.html', {'users': users})
 
-
-@admin_required
 @login_required
-def toggle_admin(request, user_id):
-    """Grant or revoke admin access to a user"""
-    
+def delete_user(request, user_id):
+    """Delete a user account"""
+
+    if request.user.role not in ['admin', 'superadmin']:
+        return redirect('login')
+
     user = get_object_or_404(User, id=user_id)
-    
-    if user == request.user:
-        return render(request, 'Admin/manage_users.html', {
-            'users': User.objects.all(),
-            'error': 'You cannot revoke your own admin access.'
-        })
-    
-    admin_profile, created = AdminUser.objects.get_or_create(user=user)
-    admin_profile.is_active = not admin_profile.is_active
-    admin_profile.save()
-    
-    return redirect('admin_manage_users')
+    user.delete()
 
+    return redirect('manage_users')
 
-@admin_required
+# ============= ADMIN MANAGEMENT =============
+@login_required
+def create_admin(username, email, password):
+
+    if request.user.role != 'superadmin':
+        return redirect('login')
+
+    if request.method == "POST":
+        username = request.POST['username']
+        email = request.POST['email']
+        password = request.POST['password']
+
+        User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            role='admin',
+            is_staff=True
+        )
+        return redirect('admin_manage_admins')
+
+    return render(request, 'create_admin.html')
+
 @login_required
 def manage_admins(request):
     """Manage admin users and their roles"""
-    
-    admins = AdminUser.objects.all()
-    
+
+    if request.user.role != 'superadmin':
+        return redirect('login')
+
+    admins = User.objects.filter(role='admin')
+
     return render(request, 'Admin/manage_admins.html', {'admins': admins})
 
-
-@admin_required
 @login_required
-def edit_admin_role(request, admin_id):
+def create_admin(request):
+    """Create a new admin user"""
+
+    if request.user.role != 'superadmin':
+        return redirect('login')
+
+    if request.method == "POST":
+
+        User.objects.create_user(
+            username=request.POST.get('username', '').strip(),
+            email=request.POST.get('email', '').strip(),
+            password=request.POST.get('password'),
+            role='admin',
+            is_staff=True
+        )
+        return redirect('manage_admins')
+
+    return render(request, 'Admin/edit_admin.html')
+
+@login_required
+def delete_admin(request, admin_id):
     """Edit admin role"""
     
-    admin = get_object_or_404(AdminUser, id=admin_id)
-    
-    if request.method == 'POST':
-        role = request.POST.get('role', 'admin')
-        if role in dict(AdminUser.ROLE_CHOICES):
-            admin.role = role
-            admin.save()
-        return redirect('admin_manage_admins')
-    
-    return render(request, 'Admin/edit_admin_role.html', {'admin': admin})
+    if request.user.role != 'superadmin':
+        return redirect('login')
 
+    admin = get_object_or_404(User, id=admin_id)
+    admin.delete()
+    
+    return redirect('manage_admins')

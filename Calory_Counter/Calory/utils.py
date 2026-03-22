@@ -5,7 +5,6 @@ def calculate_bmr(age,height,weight,gender):
 
     return 10*weight+6.25*height-5*age-161
 
-
 def calculate_tdee(bmr,activity):
 
     factor={
@@ -16,26 +15,20 @@ def calculate_tdee(bmr,activity):
 
     return bmr*factor[activity]
 
-
 def motivation(status):
 
     if status == "good":
         return "🔥 Great job! You are on track today."
-
     elif status == "over":
         return "⚠️ You exceeded your calorie limit today."
-
     else:
         return "🙂 Keep going! Try to stay within your goal."
 
-
 def detect_deficiency(meals):
-
  
     protein = sum(m.food.protein * m.qty for m in meals)
     carbs = sum(m.food.carbs * m.qty for m in meals)
     fat = sum(m.food.fat * m.qty for m in meals)
-
 
     if protein < 50 and carbs >= 130 and fat >= 20:
         return "⚠️ Low Protein"
@@ -65,5 +58,3 @@ def recalc_day(user, day):
     total = sum(m.calories for m in meals)
 
     update_summary(user, day, total, profile)
-
-

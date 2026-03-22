@@ -2,47 +2,26 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # Admin Authentication
-    path('login/', views.admin_login, name='admin_login'),
-    path('logout/', views.admin_logout, name='admin_logout'),
+
+    # Admin Logout
+    path('login/', views.user_login, name='login'),
+    path('logout/', views.user_logout, name='logout'),
     
     # Admin Dashboard
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
     
     # Food Management
-    path('foods/', views.manage_foods, name='admin_manage_foods'),
-    path('foods/add/', views.add_food_admin, name='admin_add_food'),
-    path('foods/edit/<int:food_id>/', views.edit_food_admin, name='admin_edit_food'),
-    path('foods/delete/<int:food_id>/', views.delete_food_admin, name='admin_delete_food'),
+    path('foods/', views.manage_food, name='manage_foods'),
+    path('foods/add/', views.add_food, name='add_food'),
+    path('foods/edit/<int:food_id>/', views.edit_food, name='edit_food'),
+    path('foods/delete/<int:food_id>/', views.delete_food, name='delete_food'),
     
     # User Management
-    path('users/', views.manage_users, name='admin_manage_users'),
-    path('users/toggle-admin/<int:user_id>/', views.toggle_admin, name='admin_toggle_admin'),
+    path('users/', views.manage_users, name='manage_users'),
+    path('users/delete/<int:user_id>/', views.delete_user, name='delete_user'),
     
     # Admin Management
-    path('admins/', views.manage_admins, name='admin_manage_admins'),
-    path('admins/edit-role/<int:admin_id>/', views.edit_admin_role, name='admin_edit_role'),
+    path('admins/', views.manage_admins, name='manage_admins'),
+    path('admins/add/', views.create_admin, name='add_admin'),
+    path('admins/delete/<int:admin_id>/', views.delete_admin, name='delete_admin'),
 ]
-
-def admin_login(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
-
-        if user:
-            login(request, user)
-
-            try:
-                from Admin.models import AdminUser
-                admin_profile = AdminUser.objects.get(user=user, is_active=True)
-                return redirect('admin_dashboard')
-            except AdminUser.DoesNotExist:
-                pass
-
-            return redirect('profile')
-        else:
-            error = 'Invalid credentials. Please try again.'
-            return render(request, 'admin/login.html', {'error': error})
-    else:
-        return render(request, 'admin/login.html')

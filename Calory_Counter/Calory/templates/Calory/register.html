@@ -215,6 +215,14 @@
         {% csrf_token %}
 
         <div class="form-group">
+            <label for="username">Username</label>
+            <div class="input-wrapper">
+                <i class="fas fa-user"></i>
+                <input type="text" id="username" name="username" placeholder="Choose a username" required>
+            </div>
+        </div>
+
+        <div class="form-group">
             <label for="email">Email Address</label>
             <div class="input-wrapper">
                 <i class="fas fa-envelope"></i>

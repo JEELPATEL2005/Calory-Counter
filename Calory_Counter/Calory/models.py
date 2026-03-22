@@ -1,7 +1,6 @@
 
 from django.db import models
-from django.contrib.auth.models import User
-
+from Admin.models import User
 
 # USER PROFILE
 class Profile(models.Model):
@@ -23,7 +22,6 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.username
 
-
 # FOOD DATABASE
 class Food(models.Model):
 
@@ -42,8 +40,6 @@ class Food(models.Model):
     fat = models.FloatField()
     serving_grams = models.FloatField(default=100)
     verified = models.BooleanField(default=True)
-
-
 
 # MEAL LOG
 class Meal(models.Model):
@@ -64,7 +60,6 @@ class Meal(models.Model):
     qty = models.FloatField()
     calories = models.FloatField()
 
-
 # DAILY SUMMARY
 class DailySummary(models.Model):
 
@@ -77,7 +72,6 @@ class DailySummary(models.Model):
     streak_finalized = models.BooleanField(default=False)
 
     deficiency = models.CharField(max_length=100, default="Not calculated")
-
     target = models.FloatField(default=0)   # ✅ ADD THIS
 
 

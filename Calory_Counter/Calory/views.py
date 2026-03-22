@@ -1,7 +1,6 @@
 from django.shortcuts import render,redirect
 from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
 from .utils import detect_deficiency
 from datetime import date,timedelta,datetime
 from .models import *
@@ -23,26 +22,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-
-# ---------------- REGISTER ----------------
-from django.shortcuts import render,redirect
-from django.contrib.auth import authenticate,login,logout
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
-from .utils import detect_deficiency
-from datetime import date,timedelta,datetime
-from .models import *
-from .utils import *
-import json
-import requests
-from django.http import JsonResponse
-from django.conf import settings
-from django.utils import timezone
-from django.shortcuts import get_object_or_404
-from django.shortcuts import get_object_or_404
-
-
-
 # ---------------- REGISTER ----------------
 def register(request):
 
@@ -50,18 +29,21 @@ def register(request):
 
         email = request.POST['email']
 
-        if User.objects.filter(username=email).exists():
+        if User.objects.filter(email=request.POST['email']).exists():
             return render(request,'Calory/register.html', {
-                'error': 'User already exists. Please log in.'
+                'error': 'User already exists with this email. Please log in.'
             })
 
-        User.objects.create_user(
-            username=email,
-            email=email,
-            password=request.POST['password']
+        user = User.objects.create_user(
+            username=request.POST['username'],
+            email=request.POST['email'],
+            password=request.POST['password'],
+            role='user'
         )
 
-        return redirect('login')
+        login(request, user)
+
+        return redirect('profile')
 
     return render(request,'Calory/register.html')
 
@@ -78,16 +60,6 @@ def user_login(request):
     belong instead of showing the form again.
     """
 
-    # already signed in? send them away immediately
-    if request.user.is_authenticated:
-        try:
-            from Admin.models import AdminUser
-            if AdminUser.objects.get(user=request.user, is_active=True):
-                return redirect('admin_dashboard')
-        except AdminUser.DoesNotExist:
-            return redirect('profile')
-
-    error = None
     if request.method == "POST":
         identifier = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
@@ -96,31 +68,17 @@ def user_login(request):
         # a username)
         user = authenticate(username=identifier, password=password)
 
-        # if that failed and the string looks like an email, try to resolve
-        # the corresponding username so people can log in with either field
-        if not user and '@' in identifier:
-            try:
-                user_obj = User.objects.get(email=identifier)
-                user = authenticate(username=user_obj.username, password=password)
-            except User.DoesNotExist:
-                user = None
-
-        if user:
+        if user is not None:
             login(request, user)
 
-            # admin users go straight to their dashboard
-            try:
-                from Admin.models import AdminUser
-                admin_profile = AdminUser.objects.get(user=user, is_active=True)
+            if user.role == 'user':
+                return redirect('profile')
+            elif user.role == 'admin':
                 return redirect('admin_dashboard')
-            except AdminUser.DoesNotExist:
-                pass
+            elif user.role == 'superadmin':
+                return redirect('admin_dashboard')
 
-            return redirect('profile')
-        else:
-            error = 'Invalid credentials. Please try again.'
-
-    return render(request, 'Calory/login.html', {'error': error})
+    return render(request, 'Calory/login.html')
 
 
 # ---------------- LOGOUT ----------------
@@ -177,65 +135,11 @@ def profile(request):
 
         return redirect("dashboard")
 
-
     return render(request,'Calory/profile.html')
-
-
-# @login_required
-# def dashboard(request):
-
-#     today = date.today()
-
-#     # Get profile
-#     try:
-#         profile = Profile.objects.get(user=request.user)
-#     except Profile.DoesNotExist:
-#         return redirect("profile")
-
-#     # Today's meals
-#     meals = Meal.objects.filter(user=request.user, date=today)
-
-#     breakfasts = meals.filter(meal="breakfast")
-#     lunches = meals.filter(meal="lunch")
-#     dinners = meals.filter(meal="dinner")
-#     snacks = meals.filter(meal="snack")
-
-#     # Total calories
-#     total = sum(m.calories for m in meals)
-
-#     # Status logic
-#     status = "normal"
-#     if total > profile.target:
-#         status = "over"
-#     elif total >= 0.9 * profile.target:
-#         status = "good"
-
-#     msg = motivation(status)
-
-#     # Save daily summary
-#     update_summary(request.user, today, total, profile)
-
-#     # Read summary (for deficiency)
-#     summary = DailySummary.objects.filter(
-#         user=request.user,
-#         date=today
-#     ).first()
-
-#     deficiency = summary.deficiency if summary else "Not calculated"
-
-#     return render(request, "Calory/dashboard.html", {
-#         "profile": profile,
-#         "total": round(total, 2),
-#         "msg": msg,
-#         "deficiency": deficiency,
-#         "breakfasts": breakfasts,
-#         "lunches": lunches,
-#         "dinners": dinners,
-#         "snacks": snacks,
-#     })
 
 @login_required
 def dashboard(request):
+
 
     today = date.today()
 
@@ -303,50 +207,6 @@ def dashboard(request):
         "snacks": snacks,
     })
 
-
-# def update_summary(user, day, total, profile):
-
-#     today = timezone.localdate()
-
-#     # If past record already exists → DO NOTHING (HARD FREEZE)
-#     existing = DailySummary.objects.filter(user=user, date=day).first()
-#     if existing and day < today:
-#         return
-
-#     # Determine target snapshot
-#     if existing:
-#         target = existing.target
-#         streak = existing.streak
-#     else:
-#         target = profile.target
-
-#         # calculate streak ONLY for new day
-#         prev_day = day - timedelta(days=1)
-#         prev = DailySummary.objects.filter(user=user, date=prev_day, healthy=True).first()
-#         streak = prev.streak if prev else 0
-
-#     meals = Meal.objects.filter(user=user, date=day)
-
-#     deficiency = detect_deficiency(meals) or "Balanced diet"
-#     healthy = (0.9 * target <= total <= 1.1 * target)
-
-#     if not existing:   # streak only updates when creating new day
-#         if healthy:
-#             streak += 1
-#         else:
-#             streak = 0
-
-#     DailySummary.objects.update_or_create(
-#         user=user,
-#         date=day,
-#         defaults={
-#             'total_calories': total,
-#             'healthy': healthy,
-#             'streak': streak,
-#             'deficiency': deficiency,
-#             'target': target
-#         }
-#     )
 
 def update_summary(user, day, total, profile):
 
@@ -565,6 +425,7 @@ def add_meal(request):
         "foods": json.dumps(list(foods)),
         "today": timezone.localdate()
     })
+
 # ...existing code...
 @login_required
 def edit_meal(request, meal_id):

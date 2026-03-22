@@ -16,16 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.shortcuts import redirect
-
-def redirect_to_custom_admin_login(request):
-    """Redirect admin login to custom admin login page"""
-    return redirect('/custom-admin/login/')
 
 urlpatterns = [
-    # Redirect Django admin login to custom admin login page
-#path('admin/login/', redirect_to_custom_admin_login),
     path('admin/', admin.site.urls),
-    path('custom-admin/', include('Admin.urls')),
+    path('admins/', include('Admin.urls')),
     path('', include('Calory.urls')),
 ]

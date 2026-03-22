@@ -178,13 +178,22 @@
     <div class="admin-wrapper">
         <!-- Sidebar -->
         <div class="sidebar">
-            <h2><i class="fas fa-user-shield"></i> Admin Panel</h2>
+            <h2>
+                <i class="fas fa-user-shield"></i> 
+                {% if request.user.role == 'superadmin' %}
+                    Super Admin Panel
+                {% else %}
+                    Admin Panel
+                {% endif %}
+            </h2>
             <ul class="sidebar-menu">
                 <li><a href="{% url 'admin_dashboard' %}"><i class="fas fa-chart-line"></i> Dashboard</a></li>
-                <li><a href="{% url 'admin_manage_foods' %}"><i class="fas fa-apple-alt"></i> Manage Foods</a></li>
-                <li><a href="{% url 'admin_manage_users' %}"><i class="fas fa-users"></i> Manage Users</a></li>
-                <li><a href="{% url 'admin_manage_admins' %}"><i class="fas fa-user-cog"></i> Manage Admins</a></li>
-                <li><a href="{% url 'admin_logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li><a href="{% url 'manage_foods' %}"><i class="fas fa-apple-alt"></i> Manage Foods</a></li>
+                <li><a href="{% url 'manage_users' %}"><i class="fas fa-users"></i> Manage Users</a></li>
+                {% if request.user.role == 'superadmin' %}
+                <li><a href="{% url 'manage_admins' %}"><i class="fas fa-user-cog"></i> Manage Admins</a></li>
+                {% endif %}
+                <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
 
@@ -194,7 +203,7 @@
             <div class="navbar">
                 <h1 style="color: #333;">Dashboard</h1>
                 <div class="navbar-right">
-                    <span>Welcome, <strong>{{ user.username }}</strong></span>
+                    <span>Welcome, <strong>{{ request.user.username }}</strong></span>
                 </div>
             </div>
 
@@ -215,20 +224,28 @@
                         <div class="stat-value">{{ total_users }}</div>
                     </div>
 
+                    {% if request.user.role == 'superadmin' %}
                     <div class="stat-card">
                         <i class="fas fa-user-shield"></i>
                         <div class="stat-label">Active Admins</div>
                         <div class="stat-value">{{ total_admins }}</div>
                     </div>
+                    {% endif %}
+
                 </div>
 
                 <div class="action-buttons">
-                    <a href="{% url 'admin_manage_foods' %}" class="btn">
+                    <a href="{% url 'add_food' %}" class="btn">
                         <i class="fas fa-plus"></i> Add Food
                     </a>
-                    <a href="{% url 'admin_manage_users' %}" class="btn">
+                    <a href="{% url 'manage_users' %}" class="btn">
                         <i class="fas fa-list"></i> View Users
                     </a>
+                    {% if request.user.role == 'superadmin' %}
+                    <a href="{% url 'add_admin' %}" class="btn">
+                        <i class="fas fa-user-cog"></i> Create Admin
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

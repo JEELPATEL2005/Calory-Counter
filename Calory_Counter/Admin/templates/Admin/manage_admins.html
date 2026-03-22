@@ -168,7 +168,6 @@
                     <th>Username</th>
                     <th>Email</th>
                     <th>Role</th>
-                    <th>Status</th>
                     <th>Created</th>
                     <th>Actions</th>
                 </tr>
@@ -176,26 +175,19 @@
             <tbody>
                 {% for admin in admins %}
                 <tr>
-                    <td><strong>{{ admin.user.username }}</strong></td>
-                    <td>{{ admin.user.email }}</td>
+                    <td><strong>{{ admin.username }}</strong></td>
+                    <td>{{ admin.email }}</td>
                     <td>
-                        <span class="badge badge-{{ admin.role }}">
-                            {{ admin.get_role_display }}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="status {% if admin.is_active %}active{% else %}inactive{% endif %}">
-                            {% if admin.is_active %}
-                                <i class="fas fa-check-circle"></i> Active
-                            {% else %}
-                                <i class="fas fa-times-circle"></i> Inactive
-                            {% endif %}
-                        </span>
+                        {% if admin.role == 'superadmin' %}
+                            <span class="badge badge-superadmin">Super Admin</span>
+                        {% elif admin.role == 'admin' %}
+                            <span class="badge badge-admin">Admin</span>
+                        {% endif %}
                     </td>
                     <td>{{ admin.created_at|date:"M d, Y" }}</td>
                     <td>
-                        <a href="{% url 'admin_edit_role' admin.id %}" class="btn btn-edit">
-                            <i class="fas fa-edit"></i> Edit Role
+                        <a href="{% url 'delete_admin' admin.id %}" class="btn btn-edit">
+                            <i class="fas fa-edit"></i> Delete Admin
                         </a>
                     </td>
                 </tr>

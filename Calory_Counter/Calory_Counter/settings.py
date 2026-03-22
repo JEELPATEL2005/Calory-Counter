@@ -133,9 +133,17 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Custom admin login form
 # ...existing code...
 
-LOGIN_URL = 'admin_login'  # Name of your login view
-LOGIN_REDIRECT_URL = 'admin_dashboard'  # Name of your dashboard view
-LOGOUT_REDIRECT_URL = 'admin_login'  # Where to go after logout
+LOGIN_URL = 'login'  # Name of your login view
+LOGIN_REDIRECT_URL = 'dashboard'  # Name of your dashboard view
+LOGOUT_REDIRECT_URL = 'login'  # Where to go after logout
 
 # Remove all the other conflicting LOGIN settings
 # Custom admin logout template
+
+AUTH_USER_MODEL = 'Admin.User'  # Use the custom admin user model
+
+# UserName : SUPER
+# Email : super@super.com
+# Password : Calorie
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

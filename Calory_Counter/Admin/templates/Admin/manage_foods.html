@@ -149,7 +149,7 @@
 
         <div class="header">
             <h1><i class="fas fa-apple-alt"></i> Manage Foods</h1>
-            <a href="{% url 'admin_add_food' %}" class="btn">
+            <a href="{% url 'add_food' %}" class="btn">
                 <i class="fas fa-plus"></i> Add Food
             </a>
         </div>
@@ -180,8 +180,8 @@
                     <td>{{ food.serving_grams }}</td>
                     <td>{% if food.verified %}<span style="color: #51cf66;"><i class="fas fa-check-circle"></i></span>{% else %}<span style="color: #ff6b6b;"><i class="fas fa-times-circle"></i></span>{% endif %}</td>
                     <td class="actions">
-                        <a href="{% url 'admin_edit_food' food.id %}">Edit</a>
-                        <a href="{% url 'admin_delete_food' food.id %}" class="delete" onclick="return confirm('Delete this food?');">Delete</a>
+                        <a href="{% url 'edit_food' food.id %}">Edit</a>
+                        <a href="{% url 'delete_food' food.id %}" class="delete" onclick="return confirm('Delete this food?');">Delete</a>
                     </td>
                 </tr>
                 {% empty %}
