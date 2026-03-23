@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from requests import request
-from Calory.models import Food
+from Calory.models import Food, Profile
 from .models import User
 from Calory.views import user_login, user_logout
 
@@ -148,8 +148,9 @@ def manage_users(request):
         return redirect('login')
 
     users = User.objects.filter(role = 'user').order_by('username')
+    profiles = Profile.objects.filter(user__in=users)
     
-    return render(request, 'Admin/manage_users.html', {'users': users})
+    return render(request, 'Admin/manage_users.html', {'users': users}, {'profiles': profiles})
 
 @login_required
 def delete_user(request, user_id):

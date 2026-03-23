@@ -150,6 +150,13 @@
                 <tr>
                     <th>Username</th>
                     <th>Email</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Activity Level</th>
+                    <th>Height</th>
+                    <th>Weight</th>
+                    <th>BMR</th>
+                    <th>target</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -158,6 +165,13 @@
                 <tr>
                     <td><strong>{{ user.username }}</strong></td>
                     <td>{{ user.email }}</td>
+                    <td>{{ user.profile.age }}</td>
+                    <td>{{ user.profile.gender }}</td>
+                    <td>{{ user.profile.activity }}</td>
+                    <td>{{ user.profile.height }}</td>
+                    <td>{{ user.profile.weight }}</td>
+                    <td>{{ user.profile.bmr }}</td>
+                    <td>{{ user.profile.target }}</td>
                     <td>
                         <a href="{% url 'delete_user' user.id %}" class="btn btn-edit">
                             <i class="fas fa-edit"></i> Delete User

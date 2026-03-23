@@ -21,21 +21,25 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-
-# ---------------- REGISTER ----------------
+# ---------------- AUTH ----------------
 def register(request):
 
     if request.method=="POST":
 
-        email = request.POST['email']
+        username = request.POST['username']
 
-        if User.objects.filter(email=request.POST['email']).exists():
+        if not username or not request.POST['password']:
+            return render(request, 'Calory/register.html', {
+                'error': 'All fields are required.'
+            })
+
+        if User.objects.filter(username=username).exists():
             return render(request,'Calory/register.html', {
-                'error': 'User already exists with this email. Please log in.'
+                'error': 'User already exists with this username. Please log in.'
             })
 
         user = User.objects.create_user(
-            username=request.POST['username'],
+            username=username,
             email=request.POST['email'],
             password=request.POST['password'],
             role='user'
@@ -47,21 +51,15 @@ def register(request):
 
     return render(request,'Calory/register.html')
 
-
-# ---------------- LOGIN ----------------
 def user_login(request):
     """Shared login view for regular users and admins.
-
-    Accepts either email or username. If the authenticated user has an
-    active ``AdminUser`` profile, they are redirected to the admin
-    dashboard; otherwise the regular profile/dashboard is used.
 
     If a logged‑in user stumbles onto the login page, send them where they
     belong instead of showing the form again.
     """
 
     if request.method == "POST":
-        identifier = request.POST.get('email', '').strip()
+        identifier = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
 
         # try authentication using the identifier directly (it may already be
@@ -72,7 +70,7 @@ def user_login(request):
             login(request, user)
 
             if user.role == 'user':
-                return redirect('profile')
+                return redirect('dashboard')
             elif user.role == 'admin':
                 return redirect('admin_dashboard')
             elif user.role == 'superadmin':
@@ -80,24 +78,16 @@ def user_login(request):
 
     return render(request, 'Calory/login.html')
 
-
-# ---------------- LOGOUT ----------------
 def user_logout(request):
 
     logout(request)
     return redirect('login')
-
 
 # ---------------- PROFILE ----------------
 @login_required
 def profile(request):
 
     profile = Profile.objects.filter(user=request.user).first()
-
-    # If profile already exists → go dashboard
-    if profile and request.method != "POST":
-        return redirect("dashboard")
-
 
     if request.method == "POST":
 
@@ -106,7 +96,6 @@ def profile(request):
         weight = request.POST['weight']
         gender = request.POST['gender']
         activity = request.POST['activity']
-
 
         bmr = calculate_bmr(
             int(age),
@@ -117,8 +106,7 @@ def profile(request):
 
         target = calculate_tdee(bmr, activity)
 
-
-        Profile.objects.update_or_create(
+        Profile.objects.create(
 
             user=request.user,
 
@@ -138,16 +126,56 @@ def profile(request):
     return render(request,'Calory/profile.html')
 
 @login_required
-def dashboard(request):
+def update_weight(request):
 
+    profile = Profile.objects.get(user=request.user)
+
+    if request.method == "POST":
+
+        new_weight = float(request.POST["weight"])
+
+        # Recalculate BMR
+        bmr = calculate_bmr(
+            profile.age,
+            profile.height,
+            new_weight,
+            profile.gender
+        )
+
+        # Recalculate Target
+        target = calculate_tdee(bmr, profile.activity)
+
+        # Save profile
+        profile.weight = new_weight
+        profile.bmr = round(bmr,2)
+        profile.target = round(target,2)
+        profile.save()
+
+        # ✅ Update ONLY today summary
+        today = timezone.localdate()
+
+        summary = DailySummary.objects.filter(
+            user=request.user,
+            date=today
+        ).first()
+
+        if summary:
+            summary.target = profile.target
+            summary.save()
+
+        return redirect("dashboard")
+
+    return render(request,"Calory/update_weight.html",{
+        "profile": profile
+    })
+
+# ---------------- DASHBOARD ----------------
+@login_required
+def dashboard(request):
 
     today = date.today()
 
-    # Get profile
-    try:
-        profile = Profile.objects.get(user=request.user)
-    except Profile.DoesNotExist:
-        return redirect("profile")
+    profile = Profile.objects.get(user=request.user)
 
     # Today's meals
     meals = Meal.objects.filter(user=request.user, date=today)
@@ -207,7 +235,7 @@ def dashboard(request):
         "snacks": snacks,
     })
 
-
+# ---------------- SUMMARY ----------------
 def update_summary(user, day, total, profile):
 
     today = timezone.localdate()
@@ -292,270 +320,6 @@ def summary_page(request):
         "deficiency": deficiency,
         "date": selected_date
     })    
-    
-@login_required
-def update_weight(request):
-
-    profile = Profile.objects.get(user=request.user)
-
-    if request.method == "POST":
-
-        new_weight = float(request.POST["weight"])
-
-
-        # Recalculate BMR
-        bmr = calculate_bmr(
-            profile.age,
-            profile.height,
-            new_weight,
-            profile.gender
-        )
-
-
-        # Recalculate Target
-        target = calculate_tdee(bmr, profile.activity)
-
-
-        # Save profile
-        profile.weight = new_weight
-        profile.bmr = round(bmr,2)
-        profile.target = round(target,2)
-        profile.save()
-
-
-        # ✅ Update ONLY today summary
-        today = timezone.localdate()
-
-        summary = DailySummary.objects.filter(
-            user=request.user,
-            date=today
-        ).first()
-
-        if summary:
-            summary.target = profile.target
-            summary.save()
-
-
-        return redirect("dashboard")
-
-
-    return render(request,"Calory/update_weight.html",{
-        "profile": profile
-    })
-
-@login_required
-def meal_page(request):
-
-    selected_date = request.GET.get("date")
-
-    if selected_date:
-        selected_date = date.fromisoformat(selected_date)
-    else:
-        selected_date = timezone.localdate()
-
-    meals = Meal.objects.filter(
-        user=request.user,
-        date=selected_date
-    ).select_related("food")
-
-    return render(request, "Calory/meals.html", {
-        "meals": meals,
-        "date": selected_date,
-        "today": timezone.localdate()
-    })
-
-# ...existing code...
-@login_required
-def add_meal(request):
-
-    if request.method == "POST":
-
-        date_str = request.POST.get("date")
-        
-        # Try parsing standard YYYY-MM-DD first
-        try:
-            meal_date = date.fromisoformat(date_str)
-        except ValueError:
-            # Fallback for formats like 'Feb. 15, 2026'
-            try:
-                # Remove period after month abbreviation if present (Feb. -> Feb)
-                clean_date_str = date_str.replace(".", "")
-                meal_date = datetime.strptime(clean_date_str, "%b %d, %Y").date()
-            except ValueError:
-                # If all parsing fails, default to today
-                meal_date = timezone.localdate()
-
-        # ❗ Freeze past logic
-        if meal_date < timezone.localdate():
-            # If you want to prevent adding to past, redirect or show error
-            # For now, just redirecting back to meal page
-            return redirect(f"/meal/?date={meal_date.isoformat()}")
-
-        food_id = request.POST.get("food")
-        
-        # Check if food was actually selected
-        if not food_id:
-             return redirect(f"/meal/?date={meal_date.isoformat()}")
-
-        food = Food.objects.get(id=food_id)
-        qty = float(request.POST["qty"])
-
-        grams = food.serving_grams * qty
-        calories = (food.calories_100g / 100) * grams
-
-        Meal.objects.create(
-            user=request.user,
-            food=food,
-            date=meal_date,
-            meal=request.POST["meal"],
-            qty=qty,
-            calories=round(calories,2)
-        )
-        
-        # Update daily summary
-        update_summary(request.user, meal_date, 0, Profile.objects.get(user=request.user)) # 0 is placeholder, function recalculates total
-
-        # Redirect with standard ISO format date string
-        return redirect(f"/meal/?date={meal_date.isoformat()}")
-
-    # GET request logic
-    foods = Food.objects.filter(verified=True).values("id","name","meal_type")
-    
-    return render(request,"Calory/add_meal.html",{
-        "foods": json.dumps(list(foods)),
-        "today": timezone.localdate()
-    })
-
-# ...existing code...
-@login_required
-def edit_meal(request, meal_id):
-
-    meal = get_object_or_404(Meal, id=meal_id, user=request.user)
-
-    if meal.date < timezone.localdate():
-        return redirect("meal_page")
-
-    if request.method == "POST":
-
-        qty = float(request.POST["qty"])
-        grams = meal.food.serving_grams * qty
-
-        meal.qty = qty
-        meal.calories = (meal.food.calories_100g / 100) * grams
-        meal.save()
-
-        recalc_day(request.user, meal.date)
-    
-
-        return redirect(f"/meal/?date={meal.date}")
-
-    return render(request,"Calory/edit_meal.html",{"meal":meal})
-
-@login_required
-def delete_meal(request, meal_id):
-
-    meal = get_object_or_404(Meal, id=meal_id, user=request.user)
-
-    if meal.date < timezone.localdate():
-        return redirect("meal_page")
-
-    meal_date = meal.date
-    meal.delete()
-
-    recalc_day(request.user, meal.date)
-
-    return redirect(f"/meal/?date={meal_date}")
-
-
-# ---------------- BOT PAGE ----------------
-def bot_page(request):
-    return render(request, "Calory/bot.html")
-
-
-def bot_page(request):
-    return render(request, "Calory/bot.html")
-
-
-@login_required
-def bot_api(request):
-
-    if request.method != "POST":
-        return JsonResponse({"reply": "Invalid request."}, status=400)
-
-
-    try:
-        data = json.loads(request.body)
-        user_msg = data.get("text", "").strip()
-
-        if not user_msg:
-            return JsonResponse({"reply": "Empty message."})
-
-
-        url = (
-            "https://generativelanguage.googleapis.com/v1beta/models/"
-            "gemini-2.5-flash:generateContent"
-            f"?key={settings.GEMINI_API_KEY}"
-        )
-
-
-        payload = {
-            "contents": [
-                {
-                    "parts": [
-                        {"text": user_msg}
-                    ]
-                }
-            ]
-        }
-
-
-        response = requests.post(
-            url,
-            json=payload,
-            timeout=20   # ✅ prevent hanging
-        )
-
-
-        result = response.json()
-        print(response.status_code, result) # Debug log
-
-
-
-        # ❗ API error
-        if response.status_code != 200:
-            return JsonResponse({
-                "reply": "Gemini API error. Try later.",
-                "details": result
-            }, status=502)
-
-
-        # ❗ Empty response
-        if "candidates" not in result:
-            return JsonResponse({
-                "reply": "No response from AI."
-            })
-
-
-        reply = result["candidates"][0]["content"]["parts"][0]["text"].strip()
-
-
-        return JsonResponse({"reply": reply})
-
-
-    except requests.exceptions.Timeout:
-        return JsonResponse({
-            "reply": "AI is taking too long. Try again."
-        })
-
-
-    except Exception as e:
-
-        print("Bot Error:", e)
-
-        return JsonResponse({
-            "reply": "Server error. Contact admin."
-        }, status=500)
-        
 
 def update_summary(user, day, total, profile):
 
@@ -606,10 +370,6 @@ def update_summary(user, day, total, profile):
             'target': target
         }
     )
-
-
-
-
 
 def _generate_summary_pdf(user, profile, days_count):
     """Generate PDF report for the given number of days."""
@@ -699,7 +459,213 @@ def _generate_summary_pdf(user, profile, days_count):
     buffer.seek(0)
     return buffer
 
+# ---------------- MEAL ----------------
+@login_required
+def meal_page(request):
 
+    selected_date = request.GET.get("date")
+
+    if selected_date:
+        selected_date = date.fromisoformat(selected_date)
+    else:
+        selected_date = timezone.localdate()
+
+    meals = Meal.objects.filter(
+        user=request.user,
+        date=selected_date
+    ).select_related("food")
+
+    return render(request, "Calory/meals.html", {
+        "meals": meals,
+        "date": selected_date,
+        "today": timezone.localdate()
+    })
+
+@login_required
+def add_meal(request):
+
+    if request.method == "POST":
+
+        date_str = request.POST.get("date")
+        
+        # Try parsing standard YYYY-MM-DD first
+        try:
+            meal_date = date.fromisoformat(date_str)
+        except ValueError:
+            # Fallback for formats like 'Feb. 15, 2026'
+            try:
+                # Remove period after month abbreviation if present (Feb. -> Feb)
+                clean_date_str = date_str.replace(".", "")
+                meal_date = datetime.strptime(clean_date_str, "%b %d, %Y").date()
+            except ValueError:
+                # If all parsing fails, default to today
+                meal_date = timezone.localdate()
+
+        # ❗ Freeze past logic
+        if meal_date < timezone.localdate():
+            # If you want to prevent adding to past, redirect or show error
+            # For now, just redirecting back to meal page
+            return redirect(f"/meal/?date={meal_date.isoformat()}")
+
+        food_id = request.POST.get("food")
+        
+        # Check if food was actually selected
+        if not food_id:
+             return redirect(f"/meal/?date={meal_date.isoformat()}")
+
+        food = Food.objects.get(id=food_id)
+        qty = float(request.POST["qty"])
+
+        grams = food.serving_grams * qty
+        calories = (food.calories_100g / 100) * grams
+
+        Meal.objects.create(
+            user=request.user,
+            food=food,
+            date=meal_date,
+            meal=request.POST["meal"],
+            qty=qty,
+            calories=round(calories,2)
+        )
+        
+        # Update daily summary
+        update_summary(request.user, meal_date, 0, Profile.objects.get(user=request.user)) # 0 is placeholder, function recalculates total
+
+        # Redirect with standard ISO format date string
+        return redirect(f"/meal/?date={meal_date.isoformat()}")
+
+    # GET request logic
+    foods = Food.objects.filter(verified=True).values("id","name","meal_type")
+    
+    return render(request,"Calory/add_meal.html",{
+        "foods": json.dumps(list(foods)),
+        "today": timezone.localdate()
+    })
+
+@login_required
+def edit_meal(request, meal_id):
+
+    meal = get_object_or_404(Meal, id=meal_id, user=request.user)
+
+    if meal.date < timezone.localdate():
+        return redirect("meal_page")
+
+    if request.method == "POST":
+
+        qty = float(request.POST["qty"])
+        grams = meal.food.serving_grams * qty
+
+        meal.qty = qty
+        meal.calories = (meal.food.calories_100g / 100) * grams
+        meal.save()
+
+        recalc_day(request.user, meal.date)
+    
+
+        return redirect(f"/meal/?date={meal.date}")
+
+    return render(request,"Calory/edit_meal.html",{"meal":meal})
+
+@login_required
+def delete_meal(request, meal_id):
+
+    meal = get_object_or_404(Meal, id=meal_id, user=request.user)
+
+    if meal.date < timezone.localdate():
+        return redirect("meal_page")
+
+    meal_date = meal.date
+    meal.delete()
+
+    recalc_day(request.user, meal.date)
+
+    return redirect(f"/meal/?date={meal_date}")
+
+# ---------------- BOT PAGE ----------------
+def bot_page(request):
+    return render(request, "Calory/bot.html")
+
+@login_required
+def bot_api(request):
+
+    if request.method != "POST":
+        return JsonResponse({"reply": "Invalid request."}, status=400)
+
+
+    try:
+        data = json.loads(request.body)
+        user_msg = data.get("text", "").strip()
+
+        if not user_msg:
+            return JsonResponse({"reply": "Empty message."})
+
+
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            "gemini-2.5-flash:generateContent"
+            f"?key={settings.GEMINI_API_KEY}"
+        )
+
+
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": user_msg}
+                    ]
+                }
+            ]
+        }
+
+
+        response = requests.post(
+            url,
+            json=payload,
+            timeout=20   # ✅ prevent hanging
+        )
+
+
+        result = response.json()
+        print(response.status_code, result) # Debug log
+
+
+
+        # ❗ API error
+        if response.status_code != 200:
+            return JsonResponse({
+                "reply": "Gemini API error. Try later.",
+                "details": result
+            }, status=502)
+
+
+        # ❗ Empty response
+        if "candidates" not in result:
+            return JsonResponse({
+                "reply": "No response from AI."
+            })
+
+
+        reply = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+
+        return JsonResponse({"reply": reply})
+
+
+    except requests.exceptions.Timeout:
+        return JsonResponse({
+            "reply": "AI is taking too long. Try again."
+        })
+
+
+    except Exception as e:
+
+        print("Bot Error:", e)
+
+        return JsonResponse({
+            "reply": "Server error. Contact admin."
+        }, status=500)
+        
+# ---------------- REPORT ----------------
 @login_required
 def pdf_report_7day(request):
     """Generate 7-day summary PDF report."""
@@ -709,7 +675,6 @@ def pdf_report_7day(request):
     response['Content-Disposition'] = 'attachment; filename="calory_7day_report.pdf"'
     return response
 
-
 @login_required
 def pdf_report_30day(request):
     """Generate 30-day summary PDF report."""
@@ -718,10 +683,3 @@ def pdf_report_30day(request):
     response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="calory_30day_report.pdf"'
     return response
-
-
-
-
-
-
-
