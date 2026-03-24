@@ -23,5 +23,6 @@ urlpatterns = [
     # Admin Management
     path('admins/', views.manage_admins, name='manage_admins'),
     path('admins/add/', views.create_admin, name='add_admin'),
+    path('admins/edit/<int:admin_id>/', views.edit_admin, name='edit_admin'),
     path('admins/delete/<int:admin_id>/', views.delete_admin, name='delete_admin'),
 ]

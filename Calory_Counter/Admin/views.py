@@ -165,28 +165,6 @@ def delete_user(request, user_id):
 
 # ============= ADMIN MANAGEMENT =============
 @login_required
-def create_admin(username, email, password):
-
-    if request.user.role != 'superadmin':
-        return redirect('login')
-
-    if request.method == "POST":
-        username = request.POST['username']
-        email = request.POST['email']
-        password = request.POST['password']
-
-        User.objects.create_user(
-            username=username,
-            email=email,
-            password=password,
-            role='admin',
-            is_staff=True
-        )
-        return redirect('admin_manage_admins')
-
-    return render(request, 'create_admin.html')
-
-@login_required
 def manage_admins(request):
     """Manage admin users and their roles"""
 
@@ -216,6 +194,27 @@ def create_admin(request):
         return redirect('manage_admins')
 
     return render(request, 'Admin/edit_admin.html')
+
+@login_required
+def edit_admin(request, admin_id):
+    """Edit admin role"""
+    
+    if request.user.role != 'superadmin':
+        return redirect('login')
+
+    admin = get_object_or_404(User, id=admin_id)
+
+    if request.method == "POST":
+
+        admin.username = request.POST.get('username', admin.username).strip()
+        admin.email = request.POST.get('email', admin.email).strip()
+        if request.POST.get('password'):
+            admin.set_password(request.POST.get('password'))
+        admin.save()
+
+        return redirect('manage_admins')
+    
+    return render(request, 'Admin/edit_admin.html', {'admin': admin})
 
 @login_required
 def delete_admin(request, admin_id):
