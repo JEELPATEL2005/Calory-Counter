@@ -106,7 +106,7 @@ def profile(request):
 
         target = calculate_tdee(bmr, activity)
 
-        Profile.objects.create(
+        Profile.objects.update_or_create(
 
             user=request.user,
 
@@ -126,29 +126,36 @@ def profile(request):
     return render(request,'Calory/profile.html')
 
 @login_required
-def update_weight(request):
+def update_profile(request):
 
     profile = Profile.objects.get(user=request.user)
 
     if request.method == "POST":
 
-        new_weight = float(request.POST["weight"])
+        # Get values
+        email = request.POST.get("email")
+        age = int(request.POST.get("age"))
+        height = float(request.POST.get("height"))
+        weight = float(request.POST.get("weight"))
+        activity = request.POST.get("activity")
+
+        # Update user email
+        request.user.email = email
+        request.user.save()
 
         # Recalculate BMR
-        bmr = calculate_bmr(
-            profile.age,
-            profile.height,
-            new_weight,
-            profile.gender
-        )
+        bmr = calculate_bmr(age, height, weight, profile.gender)
 
         # Recalculate Target
-        target = calculate_tdee(bmr, profile.activity)
+        target = calculate_tdee(bmr, activity)
 
-        # Save profile
-        profile.weight = new_weight
-        profile.bmr = round(bmr,2)
-        profile.target = round(target,2)
+        # Update profile with new values 
+        profile.age = age
+        profile.height = height
+        profile.weight = weight
+        profile.activity = activity
+        profile.bmr = round(bmr, 2)
+        profile.target = round(target, 2)
         profile.save()
 
         # ✅ Update ONLY today summary
@@ -165,8 +172,8 @@ def update_weight(request):
 
         return redirect("dashboard")
 
-    return render(request,"Calory/update_weight.html",{
-        "profile": profile
+    return render(request,"Calory/update_profile.html",{
+        "profile": profile,
     })
 
 # ---------------- DASHBOARD ----------------

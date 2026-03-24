@@ -10,7 +10,7 @@ urlpatterns = [
 
     # profile
     path('profile/', views.profile, name="profile"),
-    path('update-weight/', views.update_weight, name="update_weight"),
+    path('update-profile/', views.update_profile, name="update_profile"),
 
     # dashboard
     path('dashboard/', views.dashboard, name="dashboard"),

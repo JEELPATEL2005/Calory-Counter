@@ -177,13 +177,7 @@
                 <tr>
                     <td><strong>{{ admin.username }}</strong></td>
                     <td>{{ admin.email }}</td>
-                    <td>
-                        {% if admin.role == 'superadmin' %}
-                            <span class="badge badge-superadmin">Super Admin</span>
-                        {% elif admin.role == 'admin' %}
-                            <span class="badge badge-admin">Admin</span>
-                        {% endif %}
-                    </td>
+                    <td><span class="badge badge-admin">Admin</span></td>
                     <td>{{ admin.created_at|date:"M d, Y" }}</td>
                     <td>
                         <a href="{% url 'delete_admin' admin.id %}" class="btn btn-edit">

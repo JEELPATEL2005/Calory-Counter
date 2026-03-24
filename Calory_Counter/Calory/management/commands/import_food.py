@@ -1,7 +1,9 @@
-import os
-import sys
 import csv
-import django
+from io import StringIO
+import os
+
+from django.core.management.base import BaseCommand
+from Calory.models import Food
 
 # 1. Setup path to include the project root (Calory_Counter folder)
 current_dir = os.path.dirname(os.path.abspath(__file__))
