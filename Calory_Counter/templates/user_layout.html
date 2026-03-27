@@ -1,0 +1,39 @@
+{% extends "layout.html" %} 
+
+{% block title %}Calorie Counter{% endblock %} 
+
+{% block urls %}
+<li>
+  <a href="{% url 'dashboard' %}"
+    ><i class="fas fa-chart-line"></i> Dashboard</a
+  >
+</li>
+<li>
+  <a href="{% url 'add_meal' %}"><i class="fas fa-plus-circle"></i> Add Meal</a>
+</li>
+<li>
+  <a href="{% url 'meal_page' %}"><i class="fas fa-utensils"></i> Today Meal</a>
+</li>
+<li>
+  <a href="{% url 'summary_page' %}"><i class="fas fa-chart-pie"></i> View Summary</a>
+</li>
+<li>
+  <a href="{% url 'html_report_7day' %}"><i class="fas fa-calendar-week"></i> 7-Days Report</a>
+</li>
+<li>
+  <a href="{% url 'html_report_30day' %}"><i class="fas fa-calendar-alt"></i> 30-Days Report</a>
+</li>
+<li>
+  <a href="{% url 'bot_page' %}"><i class="fas fa-robot"></i> Chat Bot</a>
+</li>
+<li>
+  <a href="{% url 'update_profile' %}"><i class="fas fa-user-edit"></i> Update Profile</a>
+</li>
+<li>
+  <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</li>
+{% endblock %} 
+
+{% block page_title %} {% endblock %} 
+
+{% block page_content %} {% endblock %}

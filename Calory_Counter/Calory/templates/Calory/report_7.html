@@ -1,0 +1,74 @@
+{% extends "user_layout.html" %} 
+
+{% block title %}7-Days Report{% endblock %} 
+
+{% block page_title %}7-Days Calory Report{% endblock %} 
+
+{% block page_content %}
+<div class="report-container">
+  <div class="report-header">
+    <h2>📊 7-Day Calory Report</h2>
+    <p>Period: {{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}</p>
+  </div>
+
+  <div class="report-info">
+    <div class="info-card">
+      <h3>User Information</h3>
+      <p><strong>Username:</strong> {{ request.user.username }}</p>
+      <p><strong>Daily Target:</strong> {{ profile.target }} kcal</p>
+      <p><strong>Report Generated:</strong> {{ end_date|date:"M d, Y" }}</p>
+    </div>
+
+    <div class="info-card">
+      <h3>Summary Statistics</h3>
+      <p><strong>Healthy Days:</strong> {{ healthy_days }} of {{ count }}</p>
+      <p><strong>Average Intake:</strong> {{ avg_cal }} kcal/day</p>
+      <p>
+        <strong>Total Calories:</strong> {{ total_cal_sum|floatformat:1 }} kcal
+      </p>
+    </div>
+  </div>
+
+  <div class="report-table">
+    <h3>Daily Breakdown</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Total (kcal)</th>
+          <th>Target (kcal)</th>
+          <th>Status</th>
+          <th>Streak</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for summary in summaries %}
+        <tr>
+          <td>{{ summary.date|date:"M d, Y" }}</td>
+          <td>{{ summary.total_calories|floatformat:1 }}</td>
+          <td>{{ summary.target|floatformat:1 }}</td>
+          <td>
+            {% if summary.healthy %}
+            <span class="status-on-target">✓ On Target</span>
+            {% else %}
+            <span class="status-off-target">✗ Off Target</span>
+            {% endif %}
+          </td>
+          <td>{{ summary.streak }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">No data available for this period</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="report-actions">
+    <a href="{% url 'pdf_report_7day' %}" class="btn" target="_blank">
+      <i class="fas fa-download"></i> Download PDF Report
+    </a>
+  </div>
+</div>
+{% endblock %}

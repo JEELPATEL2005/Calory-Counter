@@ -184,13 +184,7 @@ def dashboard(request):
 
     profile = Profile.objects.get(user=request.user)
 
-    # Today's meals
-    meals = Meal.objects.filter(user=request.user, date=today)
-
-    breakfasts = meals.filter(meal="breakfast")
-    lunches = meals.filter(meal="lunch")
-    dinners = meals.filter(meal="dinner")
-    snacks = meals.filter(meal="snack")
+    meals = Meal.objects.filter(user=request.user, date=today).select_related("food")
 
     # Total calories
     total = sum(m.calories for m in meals)
@@ -236,10 +230,6 @@ def dashboard(request):
         "msg": msg,
         "deficiency": deficiency,
         "streak": streak,
-        "breakfasts": breakfasts,
-        "lunches": lunches,
-        "dinners": dinners,
-        "snacks": snacks,
     })
 
 # ---------------- SUMMARY ----------------
@@ -327,56 +317,6 @@ def summary_page(request):
         "deficiency": deficiency,
         "date": selected_date
     })    
-
-def update_summary(user, day, total, profile):
-
-    today = timezone.localdate()
-
-    # If past record already exists → DO NOTHING (HARD FREEZE)
-    existing = DailySummary.objects.filter(user=user, date=day).first()
-    if existing and day < today:
-        return
-
-    # Determine target snapshot
-    if existing:
-        target = existing.target
-    else:
-        target = profile.target
-
-    meals = Meal.objects.filter(user=user, date=day)
-
-    deficiency = detect_deficiency(meals) or "Balanced diet"
-    # Check if within range: 0.9*target <= total <= 1.1*target
-    healthy = (0.9 * target <= total <= 1.1 * target)
-
-    # Calculate streak based on whether goal is met (0.9*target <= total <= 1.1*target)
-    # Get previous day's summary
-    prev_day = day - timedelta(days=1)
-    prev = DailySummary.objects.filter(user=user, date=prev_day).first()
-    
-    if healthy:
-        # If within range, continue or start streak
-        if prev and prev.healthy:
-            # Previous day was healthy, continue streak
-            streak = prev.streak + 1
-        else:
-            # Previous day wasn't healthy or doesn't exist, start new streak
-            streak = 1
-    else:
-        # If outside range (below 0.9*target OR above 1.1*target), reset streak to 0
-        streak = 0
-
-    DailySummary.objects.update_or_create(
-        user=user,
-        date=day,
-        defaults={
-            'total_calories': total,
-            'healthy': healthy,
-            'streak': streak,
-            'deficiency': deficiency,
-            'target': target
-        }
-    )
 
 def _generate_summary_pdf(user, profile, days_count):
     """Generate PDF report for the given number of days."""
@@ -673,6 +613,72 @@ def bot_api(request):
         }, status=500)
         
 # ---------------- REPORT ----------------
+@login_required
+def html_report_7day(request):
+    """Display 7-day summary HTML report."""
+    profile = get_object_or_404(Profile, user=request.user)
+    
+    # Date range
+    end_date = date.today()
+    start_date = end_date - timedelta(days=6)  # 7 days including today
+    
+    # Fetch summaries
+    summaries = DailySummary.objects.filter(
+        user=request.user,
+        date__gte=start_date,
+        date__lte=end_date
+    ).order_by('date')
+    
+    # Calculate stats
+    total_cal_sum = sum(s.total_calories for s in summaries)
+    healthy_days = sum(1 for s in summaries if s.healthy)
+    count = len(summaries)
+    avg_cal = round(total_cal_sum / count, 1) if count > 0 else 0
+    
+    return render(request, "Calory/report_7.html", {
+        "summaries": summaries,
+        "start_date": start_date,
+        "end_date": end_date,
+        "profile": profile,
+        "total_cal_sum": total_cal_sum,
+        "healthy_days": healthy_days,
+        "avg_cal": avg_cal,
+        "count": count,
+    })
+
+@login_required
+def html_report_30day(request):
+    """Display 30-day summary HTML report."""
+    profile = get_object_or_404(Profile, user=request.user)
+    
+    # Date range
+    end_date = date.today()
+    start_date = end_date - timedelta(days=29)  # 30 days including today
+    
+    # Fetch summaries
+    summaries = DailySummary.objects.filter(
+        user=request.user,
+        date__gte=start_date,
+        date__lte=end_date
+    ).order_by('date')
+    
+    # Calculate stats
+    total_cal_sum = sum(s.total_calories for s in summaries)
+    healthy_days = sum(1 for s in summaries if s.healthy)
+    count = len(summaries)
+    avg_cal = round(total_cal_sum / count, 1) if count > 0 else 0
+    
+    return render(request, "Calory/report_30.html", {
+        "summaries": summaries,
+        "start_date": start_date,
+        "end_date": end_date,
+        "profile": profile,
+        "total_cal_sum": total_cal_sum,
+        "healthy_days": healthy_days,
+        "avg_cal": avg_cal,
+        "count": count,
+    })
+
 @login_required
 def pdf_report_7day(request):
     """Generate 7-day summary PDF report."""

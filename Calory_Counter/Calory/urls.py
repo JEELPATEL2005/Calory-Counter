@@ -25,6 +25,10 @@ urlpatterns = [
     # summary
     path('summary/', views.summary_page, name="summary_page"),
 
+    # HTML reports
+    path('report/7day/', views.html_report_7day, name="html_report_7day"),
+    path('report/30day/', views.html_report_30day, name="html_report_30day"),
+
     # PDF reports
     path('report/pdf/7day/', views.pdf_report_7day, name="pdf_report_7day"),
     path('report/pdf/30day/', views.pdf_report_30day, name="pdf_report_30day"),

@@ -1,145 +1,113 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Add Meal</title>
+{% extends "user_layout.html" %} 
 
-<style>
-body{
-    font-family:Arial;
-    background:#f4f6fb;
-    padding:30px;
-}
+{% block title %}Add Meal{% endblock %} 
 
-.box{
-    max-width:500px;
-    margin:auto;
-    background:white;
-    padding:25px;
-    border-radius:12px;
-    box-shadow:0 10px 25px rgba(0,0,0,.1);
-}
+{% block page_title %}
+    <i class="fas fa-plus-circle"></i>
+    Add Meal 
+{% endblock %} 
 
-h2{
-    margin-bottom:15px;
-}
+{% block page_content %}
+<div class="container">
+  <div class="box">
+    <div class="form-header">
+      <h2>🍽️ Add New Meal</h2>
+      <p class="form-subtitle">Track your daily nutrition intake</p>
+    </div>
 
-label{
-    font-weight:bold;
-    display:block;
-    margin-top:15px;
-}
+    <div class="date-info">
+      <i class="fas fa-calendar-alt"></i>
+      <span><strong>Date:</strong> {{ today|date:"l, F j, Y" }}</span>
+    </div>
 
-input,select{
-    width:100%;
-    padding:10px;
-    margin-top:5px;
-    border:1px solid #ccc;
-    border-radius:6px;
-}
+    <form method="POST" class="meal-form">
+      {% csrf_token %}
+      <input type="hidden" name="date" value="{{ today }}" />
 
-button{
-    margin-top:20px;
-    width:100%;
-    padding:12px;
-    border:none;
-    background:#4CAF50;
-    color:white;
-    border-radius:8px;
-    font-size:16px;
-    cursor:pointer;
-}
+      <!-- Meal Type -->
+      <div class="form-group">
+        <label for="meal">Meal Type</label>
+        <div class="input-wrapper">
+          <i class="fas fa-utensils"></i>
+          <select id="meal" name="meal" required>
+            <option value="">Select Meal Type</option>
+            <option value="breakfast">🍳 Breakfast</option>
+            <option value="lunch">🍽️ Lunch</option>
+            <option value="dinner">🌙 Dinner</option>
+            <option value="snack">🍪 Snack</option>
+          </select>
+        </div>
+      </div>
 
-button:hover{
-    background:#43a047;
-}
+      <!-- Food -->
+      <div class="form-group">
+        <label for="food">Food Item</label>
+        <div class="input-wrapper">
+          <i class="fas fa-apple-alt"></i>
+          <select id="food" name="food" required>
+            <option value="">Select meal type first</option>
+          </select>
+        </div>
+      </div>
 
-.back{
-    display:block;
-    margin-top:15px;
-    text-align:center;
-}
-</style>
-</head>
+      <!-- Quantity -->
+      <div class="form-group">
+        <label for="qty">Quantity (servings)</label>
+        <div class="input-wrapper">
+          <i class="fas fa-weight"></i>
+          <input
+            type="number"
+            id="qty"
+            name="qty"
+            step="0.1"
+            min="0.1"
+            placeholder="e.g., 1.5"
+            required
+          />
+        </div>
+      </div>
 
-<body>
+      <!-- Submit Button -->
+      <div class="form-actions">
+        <button type="submit" class="btn">
+          <i class="fas fa-plus"></i> Add Meal
+        </button>
+      </div>
+    </form>
 
-<div class="box">
-
-<h2>➕ Add Meal</h2>
-
-<p><b>Date:</b> {{ today }}</p>
-
-<form method="POST">
-{% csrf_token %}
-
-<input type="hidden" name="date" value="{{ today }}">
-
-<!-- Meal Type -->
-<label>Meal Type</label>
-<select id="meal" name="meal" required>
-    <option value="">Select Meal</option>
-    <option value="breakfast">Breakfast</option>
-    <option value="lunch">Lunch</option>
-    <option value="dinner">Dinner</option>
-    <option value="snack">Snack</option>
-</select>
-
-<!-- Food -->
-<label>Food</label>
-<select id="food" name="food" required>
-    <option value="">Select meal type first</option>
-</select>
-
-<!-- Quantity -->
-<label>Quantity</label>
-<input type="number" name="qty" step="0.1" min="0" required>
-
-<button type="submit">Add Meal</button>
-
-</form>
-
-<a href="{% url 'meal_page' %}" class="back">⬅ Back to Meals</a>
-
+  </div>
 </div>
-
 
 <!-- FOODS DATA FROM DJANGO -->
 <script>
-const FOODS = {{ foods|safe }};
+  const FOODS = {{ foods|safe }};
 </script>
 
 <!-- FILTER SCRIPT -->
 <script>
+  const mealSelect = document.getElementById("meal");
+  const foodSelect = document.getElementById("food");
 
-const mealSelect = document.getElementById("meal");
-const foodSelect = document.getElementById("food");
-
-function loadFoods(type){
-
+  function loadFoods(type) {
     foodSelect.innerHTML = '<option value="">Select Food</option>';
 
-    const filteredFoods = FOODS.filter(f => f.meal_type === type);
+    const filteredFoods = FOODS.filter((f) => f.meal_type === type);
 
-    if(filteredFoods.length === 0){
-        foodSelect.innerHTML = '<option value="">No foods available</option>';
-        return;
+    if (filteredFoods.length === 0) {
+      foodSelect.innerHTML = '<option value="">No foods available</option>';
+      return;
     }
 
-    filteredFoods.forEach(food => {
-        const option = document.createElement("option");
-        option.value = food.id;
-        option.textContent = food.name;
-        foodSelect.appendChild(option);
+    filteredFoods.forEach((food) => {
+      const option = document.createElement("option");
+      option.value = food.id;
+      option.textContent = food.name;
+      foodSelect.appendChild(option);
     });
-}
+  }
 
-mealSelect.addEventListener("change", function(){
+  mealSelect.addEventListener("change", function () {
     loadFoods(this.value);
-});
-
+  });
 </script>
-
-</body>
-</html>
+{% endblock %} 

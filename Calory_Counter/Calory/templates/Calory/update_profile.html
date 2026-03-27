@@ -1,355 +1,174 @@
-{% load static %}
+{% extends "user_layout.html" %} 
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Update Weight - Calory Counter</title>
-<link rel="stylesheet" href="{% static 'css/style.css' %}">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        /* Update Weight Page Specific Styles */
-        
-        * {
-        margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+{% block title %}Update Profile{% endblock %}
 
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px;
-        }
+{% block page_title %}
+    <i class="fas fa-user-edit"></i>
+    Update Profile 
+{% endblock %} 
 
-        .weight-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-            padding: 40px;
-            width: 100%;
-            max-width: 700px;
-            animation: slideUp 0.5s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .weight-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .weight-header h2 {
-            color: #667eea;
-            font-size: 28px;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .weight-header p {
-            color: #888;
-            font-size: 14px;
-        }
-
-        .logo-icon {
-            font-size: 40px;
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .input-wrapper i {
-            position: absolute;
-            left: 15px;
-            color: #667eea;
-            font-size: 18px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px 12px 45px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background: #f9f9f9;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            background: #fff;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-group input::placeholder {
-            color: #999;
-        }
-
-        .update-btn {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-        }
-
-        .update-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .update-btn:active {
-            transform: translateY(0);
-        }
-
-        .back-link-container {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
-            text-align: center;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: #667eea;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .back-link:hover {
-            color: #764ba2;
-            transform: translateX(-3px);
-        }
-
-        .info-box {
-            background: #f0f7ff;
-            border-left: 4px solid #667eea;
-            padding: 12px 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            color: #555;
-        }
-
-        .info-box i {
-            color: #667eea;
-            margin-right: 8px;
-        }
-
-        .weight-unit {
-            color: #999;
-            font-size: 12px;
-            margin-top: 4px;
-        }
-
-        @media (max-width: 600px) {
-            .weight-container {
-                padding: 30px 20px;
-                max-width: 90%;
-            }
-
-            .weight-header h2 {
-                font-size: 24px;
-            }
-
-            .logo-icon {
-                font-size: 36px;
-            }
-        }
-
-        .display-field {
-            cursor : not-allowed;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: #f5f5f5;
-            padding: 12px 15px;
-            border-radius: 8px;
-            border: 2px solid #e0e0e0;
-            font-size: 14px;
-            color: #555;
-        }
-
-        .display-field i {
-            color: #667eea;
-            font-size: 18px;
-        }
-
-        .display-field span {
-            font-weight: 500;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-
-        /* Make full width fields if needed */
-        .full-width {
-            grid-column: span 2;
-        }
-    </style>
-</head>
-<body>
-
-<div class="weight-container">
-    <div class="weight-header">
-        <div class="logo-icon">
-            <i class="fas fa-weight-scale"></i>
-        </div>
-        <h2>Update Profile</h2>
-        <p>Keep track of your progress</p>
+{% block page_content %}
+<div class="container">
+  <div class="box">
+    <div class="form-header">
+      <h2>👤 Update Profile</h2>
+      <p class="form-subtitle">Keep your profile information up to date</p>
     </div>
 
     <div class="info-box">
-        <i class="fas fa-info-circle"></i>
-        Update your weight regularly to monitor your health progress
+      <i class="fas fa-info-circle"></i>
+      Update your weight regularly to monitor your health progress
     </div>
 
-    <form method="post">
-    {% csrf_token %}
+    <form method="post" class="meal-form">
+      {% csrf_token %}
 
-    <div class="form-grid">
-
-    <!-- Username (READ ONLY) -->
-    <div class="form-group">
-    <label>Username</label>
-    <div class="display-field">
-        <i class="fas fa-user"></i>
-        <span>{{ request.user.username }}</span>
-    </div>
-</div>
-
-    <!-- Email -->
-    <div class="form-group">
-        <label>Email</label>
-        <div class="input-wrapper">
-            <i class="fas fa-envelope"></i>
-            <input type="email" name="email"
-                   value="{{ request.user.email }}"
-                   required>
-        </div>
-    </div>
-
-    <!-- Age -->
-    <div class="form-group">
-        <label>Age</label>
-        <div class="input-wrapper">
+      <div class="form-grid">
+        <!-- Username (READ ONLY) -->
+        <div class="form-group">
+          <label>Username</label>
+          <div class="display-field">
             <i class="fas fa-user"></i>
-            <input type="number" name="age"
-                   value="{{ profile.age }}"
-                   min="10" max="100" required>
+            <span>{{ request.user.username }}</span>
+          </div>
         </div>
-    </div>
 
-    <!-- Height -->
-    <div class="form-group">
-        <label>Height (cm)</label>
-        <div class="input-wrapper">
+        <!-- Email -->
+        <div class="form-group">
+          <label for="email">Email</label>
+          <div class="input-wrapper">
+            <i class="fas fa-envelope"></i>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value="{{ request.user.email }}"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Age -->
+        <div class="form-group">
+          <label for="age">Age</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user"></i>
+            <input
+              type="number"
+              id="age"
+              name="age"
+              value="{{ profile.age }}"
+              min="10"
+              max="100"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Height -->
+        <div class="form-group">
+          <label for="height">Height (cm)</label>
+          <div class="input-wrapper">
             <i class="fas fa-ruler-vertical"></i>
-            <input type="number" step="0.1" name="height"
-                   value="{{ profile.height }}"
-                   required>
+            <input
+              type="number"
+              id="height"
+              step="0.1"
+              name="height"
+              value="{{ profile.height }}"
+              required
+            />
+          </div>
         </div>
-    </div>
 
-    <!-- Weight -->
-    <div class="form-group">
-        <label>Weight (kg)</label>
-        <div class="input-wrapper">
+        <!-- Weight -->
+        <div class="form-group">
+          <label for="weight">Weight (kg)</label>
+          <div class="input-wrapper">
             <i class="fas fa-weight"></i>
-            <input type="number" step="0.1" name="weight"
-                   value="{{ profile.weight }}"
-                   required>
+            <input
+              type="number"
+              id="weight"
+              step="0.1"
+              name="weight"
+              value="{{ profile.weight }}"
+              required
+            />
+          </div>
         </div>
-    </div>
 
-    <!-- Gender (READ ONLY) -->
-    <div class="form-group">
-        <label>Gender</label>
-        <div class="display-field">
+        <!-- Gender (READ ONLY) -->
+        <div class="form-group">
+          <label>Gender</label>
+          <div class="display-field">
             <i class="fas fa-venus-mars"></i>
             <span>{{ profile.get_gender_display }}</span>
+          </div>
         </div>
-    </div>
 
-    <!-- Activity -->
-    <div class="form-group">
-        <label>Activity Level</label>
-        <div class="input-wrapper">
-            <select name="activity" class="form-control" required>
-                <option value="low" {% if profile.activity == 'low' %}selected{% endif %}>Low</option>
-                <option value="medium" {% if profile.activity == 'medium' %}selected{% endif %}>Medium</option>
-                <option value="high" {% if profile.activity == 'high' %}selected{% endif %}>High</option>
+        <!-- Activity -->
+        <div class="form-group">
+          <label for="activity">Activity Level</label>
+          <div class="input-wrapper">
+            <select id="activity" name="activity" class="form-control" required>
+              <option
+                value="low"
+                {%
+                if
+                profile.activity=""
+                ="low"
+                %}selected{%
+                endif
+                %}
+              >
+                Low
+              </option>
+              <option
+                value="medium"
+                {%
+                if
+                profile.activity=""
+                ="medium"
+                %}selected{%
+                endif
+                %}
+              >
+                Medium
+              </option>
+              <option
+                value="high"
+                {%
+                if
+                profile.activity=""
+                ="high"
+                %}selected{%
+                endif
+                %}
+              >
+                High
+              </option>
             </select>
+          </div>
         </div>
-    </div>
 
-    <div class="form-group">
-        <label>Account Created</label>
-        <div class="display-field">
+        <!-- Account Created -->
+        <div class="form-group">
+          <label>Account Created</label>
+          <div class="display-field">
             <i class="fas fa-calendar-alt"></i>
             <span>{{ request.user.created_at|date:"d M Y, h:i A" }}</span>
+          </div>
         </div>
-    </div>
+      </div>
 
-    </div>
-
-    <button type="submit" class="update-btn">
-        Update Profile
-    </button>
-</form>
-
-    <div class="back-link-container">
-        <a href="{% url 'dashboard' %}" class="back-link">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
-    </div>
-
+      <!-- Submit Button -->
+      <div class="form-actions">
+        <button type="submit" class="btn">
+          <i class="fas fa-save"></i> Update Profile
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
-</body>
-</html>
+{% endblock %} 

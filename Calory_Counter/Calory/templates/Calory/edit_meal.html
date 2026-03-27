@@ -1,72 +1,79 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Meal</title>
-    <style>
-        body{
-            font-family:Arial;
-            background:#f4f6fb;
-            padding:30px;
-        }
+{% extends "user_layout.html" %} 
 
-        .box{
-            max-width:500px;
-            margin:auto;
-            background:white;
-            padding:25px;
-            border-radius:12px;
-            box-shadow:0 10px 25px rgba(0,0,0,.1);
-        }
+{% block title %}Edit Meal{% endblock %} 
 
-        input,select{
-            width:100%;
-            padding:10px;
-            margin-top:8px;
-            margin-bottom:15px;
-            border-radius:6px;
-            border:1px solid #ddd;
-        }
+{% block page_title %}
+    <i class="fas fa-edit"></i>
+    Edit Meal 
+{% endblock %} 
 
-        .btn{
-            padding:10px 15px;
-            border:none;
-            border-radius:6px;
-            cursor:pointer;
-            text-decoration:none;
-        }
+{% block page_content %}
+<div class="container">
+  <div class="box">
+    <div class="form-header">
+      <h2>✏️ Edit Meal</h2>
+      <p class="form-subtitle">Modify your meal details</p>
+    </div>
 
-        .save{ background:#ffc107; }
-        .cancel{ background:#ccc; margin-left:10px;}
-    </style>
-</head>
-<body>
+    <div class="date-info">
+      <i class="fas fa-calendar-alt"></i>
+      <span><strong>Date:</strong> {{ meal.date|date:"l, F j, Y" }}</span>
+    </div>
 
-<div class="box">
+    <form method="post" class="meal-form">
+      {% csrf_token %}
 
-<h2>✏ Edit Meal</h2>
+      <!-- Food (Read-only) -->
+      <div class="form-group">
+        <label>Food Item</label>
+        <div class="display-field">
+          <i class="fas fa-apple-alt"></i>
+          <span>{{ meal.food.name }}</span>
+        </div>
+      </div>
 
-<form method="post">
-    {% csrf_token %}
+      <!-- Meal Type (Read-only) -->
+      <div class="form-group">
+        <label>Meal Type</label>
+        <div class="display-field">
+          <i class="fas fa-utensils"></i>
+          <span>{{ meal.get_meal_display }}</span>
+        </div>
+      </div>
 
-    <label>Food</label>
-    <input type="text" value="{{ meal.food.name }}" disabled>
+      <!-- Quantity -->
+      <div class="form-group">
+        <label for="qty">Quantity (servings)</label>
+        <div class="input-wrapper">
+          <i class="fas fa-weight"></i>
+          <input
+            type="number"
+            id="qty"
+            name="qty"
+            step="0.1"
+            min="0.1"
+            value="{{ meal.qty }}"
+            required
+          />
+        </div>
+      </div>
 
-    <label>Meal Type</label>
-    <input type="text" value="{{ meal.meal }}" disabled>
+      <!-- Submit Buttons -->
+      <div class="form-actions">
+        <button type="submit" class="btn">
+          <i class="fas fa-save"></i> Update Meal
+        </button>
+      </div>
+    </form>
 
-    <label>Quantity</label>
-    <input type="number" name="qty" step="0.1" value="{{ meal.qty }}" required>
-
-    <button type="submit" class="btn save">Update Meal</button>
-
-    <!-- IMPORTANT FIX HERE -->
-    <a href="{% url 'meal_page' %}?date={{ meal.date|date:'Y-m-d' }}" class="btn cancel">
-        Cancel
-    </a>
-
-</form>
-
+    <div class="form-footer">
+      <a
+        href="{% url 'meal_page' %}?date={{ meal.date|date:'Y-m-d' }}"
+        class="btn secondary"
+      >
+        <i class="fas fa-times"></i> Cancel
+      </a>
+    </div>
+  </div>
 </div>
-</body>
-</html>
+{% endblock %}
